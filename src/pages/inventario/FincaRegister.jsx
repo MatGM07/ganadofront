@@ -1,30 +1,15 @@
 import { MapPin, Home, Map } from 'lucide-react';
 import React, { useState } from 'react';
 import Header from '../../components/Header';
+import colombia from "../../data/colombia.json";
 
-// TODO: Instalar el paquete colombia-json
-// npm install colombia-json
-// import { departments, cities } from "colombia-json";
 
-// Datos temporales para desarrollo (reemplazar con import real)
-const departments = [
-  "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", 
-  "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", 
-  "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", 
-  "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", 
-  "San Andrés y Providencia", "Santander", "Sucre", "Tolima", "Valle del Cauca", 
-  "Vaupés", "Vichada"
-];
+const departments = colombia.map(d => d.departamento);
 
-const cities = [
-  { city: "Villavicencio", department: "Meta" },
-  { city: "Acacías", department: "Meta" },
-  { city: "Granada", department: "Meta" },
-  { city: "Bogotá", department: "Cundinamarca" },
-  { city: "Soacha", department: "Cundinamarca" },
-  { city: "Medellín", department: "Antioquia" },
-  { city: "Envigado", department: "Antioquia" },
-];
+const cities = (departamento) => {
+  const dep = colombia.find(d => d.departamento === departamento);
+  return dep ? dep.ciudades : [];
+};
 
 function FincaRegister() {
   const [nombreFinca, setNombreFinca] = useState('');
@@ -35,11 +20,9 @@ function FincaRegister() {
   const handleDepartamento = (e) => {
     const selectedDept = e.target.value;
     setDept(selectedDept);
-    setMunicipio(''); // Reset municipio cuando cambia el departamento
-    setMunicipiosFiltrados(
-      cities.filter((c) => c.department === selectedDept)
-    );
-  };
+    setMunicipio('');
+    setMunicipiosFiltrados(cities(selectedDept)); // <- AQUÍ EL FIX
+    };
 
   const handleSubmit = () => {
     console.log('Crear finca:', { nombreFinca, dept, municipio });
@@ -137,9 +120,9 @@ function FincaRegister() {
                   >
                     <option value="">Seleccione un municipio...</option>
                     {municipiosFiltrados.map((m) => (
-                      <option key={m.city} value={m.city}>
-                        {m.city}
-                      </option>
+                    <option key={m} value={m}>
+                        {m}
+                    </option>
                     ))}
                   </select>
                 </div>

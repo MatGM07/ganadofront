@@ -1,7 +1,12 @@
 import Login from 'pages/Login';
 import Register from 'pages/Register';
-import FincaRegister from 'pages/inventario/FincaRegister'
+import FincaRegister from 'pages/usuarios/FincaRegister'
 import Home from 'pages/Home';
+import AnimalRegister from 'pages/inventario/AnimalRegister'
+import AnimalEdit from 'pages/inventario/AnimalEdit'
+import AnimalDetail from 'pages/inventario/AnimalDetail'
+import AnimalList from 'pages/inventario/AnimalList'
+import AnimalHistory from 'pages/inventario/AnimalHistory'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
@@ -12,6 +17,11 @@ function App() {
         <Route path="/login" element={<Login />}/>
         <Route path="/register" element={<Register />}/>
         <Route path="/fincaRegister" element={<FincaRegister />}/>
+        <Route path="/inventario/registrar" element={<AnimalRegister />} />
+        <Route path="/inventario/:id/editar" element={<AnimalEdit />} />
+        <Route path="/inventario/:id" element={<AnimalDetail />} />
+        <Route path="/inventario/:id/historial" element={<AnimalHistory />} />
+        <Route path="/inventario" element={<AnimalList />} />
       </Routes>
     </Router>
   );

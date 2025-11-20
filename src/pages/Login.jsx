@@ -1,17 +1,41 @@
 import { Menu, X, Beef, Heart, Package, BarChart3, Settings, User, Lock } from 'lucide-react';
 import React, { useState } from 'react';
+import { apiPost } from "../api/api";
 import Header from '../components/Header';
 
 
 function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { username, password, rememberMe });
-    // Aquí iría la lógica de autenticación
+
+    try {
+      const res = await apiPost("/api/auth/login", {
+        email,
+        password
+      });
+
+      console.log("LOGIN OK:", res);
+
+      // res debe tener { user, token }
+
+      localStorage.setItem("token", res.token);
+
+      if (!res.token) {
+        alert("Error: no se recibió token del servidor");
+        return;
+      }
+
+      // Redirigir después del login
+      window.location.href = "/";
+
+    } catch (err) {
+      console.error(err);
+      alert("Credenciales incorrectas");
+    }
   };
 
   return (
@@ -42,21 +66,21 @@ function Login() {
               {/* Campo Usuario */}
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                  Usuario
+                  Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    id="username"
-                    name="username"
-                    type="text"
+                    id="email"
+                    name="email"
+                    type="email"
                     required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
-                    placeholder="Tu usuario"
+                    placeholder="Tu Email"
                   />
                 </div>
               </div>
@@ -85,19 +109,7 @@ function Login() {
 
               {/* Recordarme y olvidé contraseña */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer">
-                    Recordarme
-                  </label>
-                </div>
+                
 
                 <div className="text-sm">
                   <a href="#" className="font-medium text-green-600 hover:text-green-700 transition-colors">
@@ -119,7 +131,7 @@ function Login() {
             <div className="text-center pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
                 ¿No tienes una cuenta?{' '}
-                <a href="#" className="font-medium text-green-600 hover:text-green-700 transition-colors">
+                <a href="/register" className="font-medium text-green-600 hover:text-green-700 transition-colors">
                   Regístrate aquí
                 </a>
               </p>

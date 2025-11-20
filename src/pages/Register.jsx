@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Beef, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import Header from '../components/Header';
+import { apiPost, apiGet } from "../api/api";
 
 export default function Register() {
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,10 +32,17 @@ export default function Register() {
     };
   };
 
-  const handleSubmit = (e) => {
+  const validateName = (name) => name.length >= 5;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess(false);
+
+    if (!validateName(name)){
+      setError('El nombre no es válido, debe tener al menos 5 caracteres');
+      return;
+    }
 
     // Validar email
     if (!validateEmail(email)) {
@@ -61,36 +70,45 @@ export default function Register() {
       return;
     }
 
-    // Simular verificación de email duplicado
-    // En producción, esto sería una llamada a tu API
-    const emailExists = false; // Simular verificación
-    if (emailExists) {
-      setError('Este correo electrónico ya está registrado');
+    try {
+      let emailData;
+
+      try {
+        emailData = await apiGet(`/api/users/checkemail?email=${email}`);
+      } catch (err) {
+        setError(err.message || "Error al verificar el correo");
+        return;
+      }
+
+      if (emailData.exists) {
+        setError("Este correo electrónico ya está registrado");
+        return;
+      }
+    } catch (err) {
+      setError(err.message ||"Error al verificar el correo" );
       return;
     }
 
-    // Crear registro con fecha y hora
-    const userData = {
-      email,
-      password, // En producción, NUNCA guardes contraseñas en texto plano
-      createdAt: new Date().toISOString(),
-      createdAtFormatted: new Date().toLocaleString('es-CO', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
-    };
+    try {
+      const data = await apiPost("/api/users/register", {
+        name,
+        email,
+        password
+      });
 
-    console.log('Usuario registrado:', userData);
-    setSuccess(true);
+      console.log("REGISTER OK:", data);
+      setSuccess(true);
+
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setName("");
     
-    // Limpiar formulario
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
+
+    } catch (err) {
+      setError(err.message || "Error registrando usuario");
+    }
+    
   };
 
   const passwordValidation = validatePassword(password);
@@ -156,6 +174,27 @@ export default function Register() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
                     placeholder="tu@email.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
+                    placeholder="Tu nombre"
                   />
                 </div>
               </div>

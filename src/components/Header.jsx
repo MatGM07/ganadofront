@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Beef, Heart, Package, BarChart3, Settings, User, LogOut } from 'lucide-react';
+import { useAuth } from "../hooks/useAuth";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!localStorage.getItem("token");
-  });
+  const { isLoggedIn, selectedFinca, logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    window.location.href = "/login";
-  };
+  const shouldShowMenu = !!selectedFinca; // 🔥 Si no hay finca, no se muestran los módulos
 
   const navItems = [
     { name: 'Inventario', icon: Package, path: '/inventario' },
@@ -39,21 +34,21 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 group"
-              >
-                <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            ))}
+            {shouldShowMenu &&
+              navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 group"
+                >
+                  <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              ))}
           </div>
 
           {/* Right Section */}
           <div className="hidden md:flex items-center space-x-3">
-
             {!isLoggedIn ? (
               <a
                 href="/login"
@@ -65,11 +60,11 @@ export default function Header() {
             ) : (
               <>
                 <span className="text-gray-600 font-medium">
-                  Sesión iniciada
+                  {selectedFinca ? "Finca activa" : "Sin finca seleccionada"}
                 </span>
 
                 <button
-                  onClick={handleLogout}
+                  onClick={logout}
                   className="flex items-center space-x-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md"
                 >
                   <LogOut className="w-5 h-5" />
@@ -77,7 +72,6 @@ export default function Header() {
                 </button>
               </>
             )}
-
           </div>
 
           {/* Mobile menu button */}
@@ -94,20 +88,21 @@ export default function Header() {
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="space-y-1">
 
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              ))}
+              {shouldShowMenu &&
+                navItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                ))}
 
+              {/* Login/Logout mobile */}
               <div className="pt-4 mt-4 border-t border-gray-100 space-y-2">
-
                 {!isLoggedIn ? (
                   <a
                     href="/login"
@@ -118,14 +113,13 @@ export default function Header() {
                   </a>
                 ) : (
                   <button
-                    onClick={handleLogout}
+                    onClick={logout}
                     className="w-full flex items-center justify-center space-x-2 bg-red-500 text-white px-4 py-3 rounded-lg hover:bg-red-600 transition-all"
                   >
                     <LogOut className="w-5 h-5" />
                     <span>Cerrar sesión</span>
                   </button>
                 )}
-
               </div>
 
             </div>

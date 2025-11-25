@@ -1,14 +1,16 @@
 import Login from 'pages/Login';
 import Register from 'pages/Register';
-import FincaRegister from 'pages/usuarios/FincaRegister'
+import FincaRegister from 'pages/inventario/FincaRegister'
 import Home from 'pages/Home';
 import Password from 'pages/PasswordRecovery'
 import ProtectedRoute from "./api/ProtectedRoute";
+import FincaProtectedRoute from './api/FincaProtectedRoute';
 import AnimalRegister from 'pages/inventario/AnimalRegister'
 import AnimalEdit from 'pages/inventario/AnimalEdit'
 import AnimalDetail from 'pages/inventario/AnimalDetail'
 import AnimalList from 'pages/inventario/AnimalList'
 import AnimalHistory from 'pages/inventario/AnimalHistory'
+import FincaDashboard from 'pages/inventario/FincaDashboard';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
@@ -17,7 +19,15 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />}/>
         <Route path="/register" element={<Register />}/>
-        <Route path="/fincaRegister" element={<FincaRegister />}/>
+
+        <Route
+          path="/fincaRegister"
+          element={
+            <ProtectedRoute>
+              <FincaRegister />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/"
@@ -25,6 +35,15 @@ function App() {
             <ProtectedRoute>
               <Home />
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/finca/:id"
+          element={
+            <FincaProtectedRoute>
+              <FincaDashboard />
+            </FincaProtectedRoute>
           }
         />
 

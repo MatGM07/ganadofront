@@ -2,9 +2,12 @@ import { MapPin, Home, Map } from 'lucide-react';
 import React, { useState } from 'react';
 import Header from '../../components/Header';
 import colombia from "../../data/colombia.json";
+import { useAuth } from "../../hooks/useAuth";
+import { apiPost } from "../../api/api";
 
 
 const departments = colombia.map(d => d.departamento);
+
 
 const cities = (departamento) => {
   const dep = colombia.find(d => d.departamento === departamento);
@@ -24,9 +27,44 @@ function FincaRegister() {
     setMunicipiosFiltrados(cities(selectedDept)); // <- AQUÍ EL FIX
     };
 
-  const handleSubmit = () => {
-    console.log('Crear finca:', { nombreFinca, dept, municipio });
-    // TODO: Aquí iría la lógica para enviar al backend
+
+  const { user } = useAuth(); // <-- UUID DEL USUARIO LOGUEADO
+
+  const handleSubmit = async () => {
+    try {
+      if (!user || !user.id) {
+        alert("No se pudo obtener el usuario actual.");
+        return;
+      }
+
+      const fincaData = {
+        nombre: nombreFinca,
+        departamento: dept,
+        municipio: municipio,
+        usuarioCreadorId: user.id,      // UUID
+        miembrosIds: [user.id]          // el creador también queda como miembro
+      };
+
+      console.log("Enviando finca:", fincaData);
+
+      const response = await apiPost("/api/inventory/fincas", fincaData);
+      console.log(response)
+
+      alert("Finca creada exitosamente");
+
+      // Opcional: limpiar formulario
+      setNombreFinca("");
+      setDept("");
+      setMunicipio("");
+      setMunicipiosFiltrados([]);
+
+      // Si deseas navegar a otra pantalla:
+      // navigate("/dashboard");
+
+    } catch (err) {
+      console.error(err);
+      alert("Error al crear la finca: " + err.message);
+    }
   };
 
   return (
@@ -147,7 +185,7 @@ function FincaRegister() {
                   onClick={() => window.history.back()}
                   className="w-full flex justify-center items-center space-x-2 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 font-medium"
                 >
-                  <span>Cancelar</span>
+                  <span>Volver</span>
                 </button>
               </div>
             </div>

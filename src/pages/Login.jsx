@@ -1,12 +1,15 @@
 import { Menu, X, Beef, Heart, Package, BarChart3, Settings, User, Lock } from 'lucide-react';
 import React, { useState } from 'react';
 import { apiPost } from "../api/api";
+import { useAuth } from "../hooks/useAuth";
 import Header from '../components/Header';
 
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const { login } = useAuth(); 
 
 
   const handleSubmit = async (e) => {
@@ -20,9 +23,13 @@ function Login() {
 
       console.log("LOGIN OK:", res);
 
+      if (!res.token || !res.user) {
+        alert("Error: respuesta inesperada del servidor");
+        return;
+      }
       // res debe tener { user, token }
 
-      localStorage.setItem("token", res.token);
+      login(res.token, res.user);
 
       if (!res.token) {
         alert("Error: no se recibió token del servidor");

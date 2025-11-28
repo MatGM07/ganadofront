@@ -11,10 +11,10 @@ export default function Header() {
   const shouldShowMenu = !!selectedFinca; // 🔥 Si no hay finca, no se muestran los módulos
 
   const navItems = [
-    { name: 'Inventario', icon: Package, path: '/inventario' },
-    { name: 'Reproducción', icon: Heart, path: '/reproduccion' },
-    { name: 'Sanidad', icon: Beef, path: '/sanidad' },
-    { name: 'Reportes', icon: BarChart3, path: '/reportes' },
+    { name: 'Inventario', icon: Package, path: `/${selectedFinca?.id}/inventario` },
+    { name: 'Reproducción', icon: Heart, path: `/${selectedFinca?.id}/reproduccion` },
+    { name: 'Sanidad', icon: Beef, path: `/${selectedFinca?.id}/sanidad` },
+    { name: 'Reportes', icon: BarChart3, path: `/${selectedFinca?.id}/reportes` },
   ];
 
   return (

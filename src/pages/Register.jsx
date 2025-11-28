@@ -90,13 +90,12 @@ export default function Register() {
     }
 
     try {
-      const data = await apiPost("/api/users/register", {
+      await apiPost("/api/users/register", {
         name,
         email,
         password
       });
 
-      console.log("REGISTER OK:", data);
       setSuccess(true);
 
       setEmail("");

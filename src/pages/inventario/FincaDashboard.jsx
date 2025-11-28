@@ -19,6 +19,8 @@ function FincaDashboard() {
   const [emailInvitacion, setEmailInvitacion] = useState('');
   const [enviandoInvitacion, setEnviandoInvitacion] = useState(false);
 
+  const fincaId = selectedFinca?.id;
+
   const cargarNombrePropietario = async (propietarioId) => {
     try {
       const userData = await apiGet(`/api/users/${propietarioId}`);
@@ -157,7 +159,7 @@ function FincaDashboard() {
     }
     };
 
-    
+
   const esCreador = user && fincaData && user.id === fincaData.usuarioCreadorId;
 
   const menuItems = [
@@ -165,21 +167,21 @@ function FincaDashboard() {
       icon: Package,
       title: "Inventario",
       description: "Gestión de animales",
-      path: "/finca/inventario",
+      path: `/${fincaId}/inventario`,
       color: "from-blue-500 to-blue-600"
     },
     {
       icon: Heart,
       title: "Reproducción",
       description: "Control reproductivo",
-      path: "/finca/reproduccion",
+      path: `/${fincaId}/reproduccion`,
       color: "from-pink-500 to-pink-600"
     },
     {
       icon: Activity,
       title: "Sanidad",
       description: "Salud del ganado",
-      path: "/finca/sanidad",
+      path: `/${fincaId}/sanidad`,
       color: "from-red-500 to-red-600"
     },
     {

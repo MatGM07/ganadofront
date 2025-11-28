@@ -1,4 +1,4 @@
-export const API_URL = "http://localhost:8080"; // Gateway
+export const API_URL = import.meta.env.VITE_API_URL;
 
 async function parseError(res) {
   try {
@@ -69,4 +69,29 @@ export async function apiPut(path, body) {
 
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
+}
+
+export async function apiDelete(path) {
+  const token = localStorage.getItem("token");
+
+  console.log("=== API DELETE ===");
+  console.log("URL:", API_URL + path);
+  console.log("TOKEN:", token);
+
+  const res = await fetch(API_URL + path, {
+    method: "DELETE",
+    headers: {
+      "Authorization": token ? `Bearer ${token}` : undefined
+    }
+  });
+
+  console.log("Response status:", res.status);
+
+  if (!res.ok) throw new Error(await parseError(res));
+  
+  // DELETE puede retornar vacío (204) o JSON
+  if (res.status === 204) return null;
+  
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }

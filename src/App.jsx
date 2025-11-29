@@ -25,8 +25,10 @@ import ReproductionDashboard from 'pages/reproduccion/ReproductionDashboard';
 import MontaRegister from 'pages/reproduccion/MontaRegister';
 import DiagnosticoGestacion from 'pages/reproduccion/DiagnosticoGestacion';
 import ReproduccionHistorial from 'pages/reproduccion/ReproductionHistorial';
+import GenealogiaView from 'pages/reproduccion/GenealogiaView';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import PasswordRecovery from 'pages/PasswordRecovery';
 
 function App() {
   return (
@@ -34,7 +36,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />}/>
         <Route path="/register" element={<Register />}/>
-
+        <Route path="/passwordrecovery" element={<PasswordRecovery />}/>
         <Route
           path="/fincaRegister"
           element={
@@ -59,15 +61,6 @@ function App() {
             <FincaProtectedRoute>
               <FincaDashboard />
             </FincaProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/passwordrecovery"
-          element={
-            <ProtectedRoute>
-              <Password />
-            </ProtectedRoute>
           }
         />
 
@@ -198,7 +191,7 @@ function App() {
         />
 
         <Route
-          path="/:fincaid/reproduccion/nacimiento"
+          path="/:fincaid/reproduccion/nacimiento/:animalid"
           element={
             <FincaProtectedRoute>
               <ReproductionBirth />
@@ -211,6 +204,15 @@ function App() {
           element={
             <FincaProtectedRoute>
               <ReproductionDashboard />
+            </FincaProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/:fincaid/reproduccion/genealogia/:animalId"
+          element={
+            <FincaProtectedRoute>
+              <GenealogiaView />
             </FincaProtectedRoute>
           }
         />

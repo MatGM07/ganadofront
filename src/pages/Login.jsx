@@ -119,7 +119,7 @@ function Login() {
                 
 
                 <div className="text-sm">
-                  <a href="#" className="font-medium text-green-600 hover:text-green-700 transition-colors">
+                  <a href="/passwordrecovery" className="font-medium text-green-600 hover:text-green-700 transition-colors">
                     ¿Olvidaste tu contraseña?
                   </a>
                 </div>

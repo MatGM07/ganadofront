@@ -34,7 +34,7 @@ function PasswordRecovery() {
     setLoading(true);
 
     try {
-      const res = await apiPost("/api/users/reset-password", { email });
+      const res = await apiPost("/api/auth/reset-password", { email });
       console.log("codigo enviado:", res);
       setError("");      // limpiar errores previos
       setStep(2);
@@ -51,7 +51,7 @@ function PasswordRecovery() {
     setLoading(true);
 
     try {
-      const res = await apiPost("/api/users/reset-password/confirm", { code });
+      const res = await apiPost("/api/auth/reset-password/confirm", { code });
       console.log("Código verificado:", res);
       setError("");
       setStep(3);
@@ -88,7 +88,7 @@ function PasswordRecovery() {
     setLoading(true);
 
     try {
-      const res = await apiPost("/api/users/reset-password/new", {
+      const res = await apiPost("/api/auth/reset-password/new", {
         email,
         password
       });

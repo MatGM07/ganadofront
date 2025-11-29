@@ -14,13 +14,15 @@ import {
 import Header from "../../components/Header";
 import { useAuth } from "../../hooks/useAuth";
 import AnimalSearchModal from "../../components/reproduccion/AnimalSearchModal";
+import { apiGet } from "../../api/api";
+
 
 export default function ReproduccionDashboard() {
   const { fincaid } = useParams();
   const navigate = useNavigate();
   const { selectedFinca } = useAuth();
 
-  const [notificaciones, setNotificaciones] = useState([]);
+  const [recordatorios, setRecordatorios] = useState([]);
   const [estadisticas, setEstadisticas] = useState({
     montasActivas: 0,
     gestacionesEnCurso: 0,
@@ -38,53 +40,76 @@ export default function ReproduccionDashboard() {
   });
 
   useEffect(() => {
-    const fetchDatosReproduccion = async () => {
-      try {
-        setLoading(true);
+  const fetchDatosReproduccion = async () => {
+    try {
+      setLoading(true);
+      
+      // 1. Obtener todos los animales de la finca
+
+      const animales = await apiGet("/api/inventory/animales");
+
+      
         
-        // Datos de ejemplo - aquí puedes cargar desde el backend
-        setNotificaciones([
-          {
-            id: 1,
-            tipo: "gestacion",
-            mensaje: "3 hembras están próximas a la fecha estimada de parto",
-            prioridad: "alta",
-            fecha: new Date().toISOString()
-          },
-          {
-            id: 2,
-            tipo: "diagnostico",
-            mensaje: "Pendiente diagnóstico de gestación para 2 montas",
-            prioridad: "media",
-            fecha: new Date().toISOString()
-          },
-          {
-            id: 3,
-            tipo: "monta",
-            mensaje: "Revisar calendario de montas programadas",
-            prioridad: "baja",
-            fecha: new Date().toISOString()
-          }
-        ]);
+        // Filtrar solo los animales de esta finca
+      const animalesFinca = animales.filter(animal => animal.fincaId === fincaid);
 
-        setEstadisticas({
-          montasActivas: 5,
-          gestacionesEnCurso: 8,
-          nacimientosEsteMes: 12,
-          ultimaActualizacion: new Date().toISOString()
-        });
+      console.log(animalesFinca)
 
-      } catch (err) {
-        console.error("Error cargando datos de reproducción:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const idsAnimalesFinca = animalesFinca.map(animal => animal.id);
 
-    if (fincaid) {
-      fetchDatosReproduccion();
+      
+      // 2. Obtener todas las gestaciones
+      const todasGestaciones = await apiGet("/api/reproduccion/gestaciones");
+      
+      // 3. Filtrar gestaciones activas de animales de esta finca
+      const gestacionesActivas = todasGestaciones.filter(
+        g => g.estado === "ACTIVA" && idsAnimalesFinca.includes(g.idHembra)
+      );
+      
+      // 4. Calcular días hasta parto (solo informativo)
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      const recordatoriosSinFiltroFecha = gestacionesActivas
+        .map(gestacion => {
+          const fechaParto = new Date(gestacion.fechaEstimadaParto);
+          fechaParto.setHours(0, 0, 0, 0);
+          const diasRestantes = Math.ceil((fechaParto - hoy) / (1000 * 60 * 60 * 24));
+
+          const animal = animales.find(a => a.id === gestacion.idHembra);
+
+          return {
+            id: gestacion.id,
+            idHembra: gestacion.idHembra,
+            nombreAnimal: animal?.nombre || animal?.numeroIdentificacion || `Animal ${gestacion.idHembra}`,
+            fechaEstimadaParto: gestacion.fechaEstimadaParto,
+            diasRestantes,
+            gestacion
+          };
+        })
+        .sort((a, b) => a.diasRestantes - b.diasRestantes);  // Ordenadas por fecha
+
+      setRecordatorios(recordatoriosSinFiltroFecha);
+
+      // 5. Actualizar estadísticas
+      setEstadisticas({
+        montasActivas: 5, // TODO
+        gestacionesEnCurso: gestacionesActivas.length,
+        nacimientosEsteMes: 12, // TODO
+        ultimaActualizacion: new Date().toISOString()
+      });
+
+    } catch (err) {
+      console.error("Error cargando datos de reproducción:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [fincaid]);
+  };
+
+  if (fincaid) {
+    fetchDatosReproduccion();
+  }
+}, [fincaid]);
 
   const handleVolverFinca = () => {
     navigate(`/finca/${fincaid}`);
@@ -153,29 +178,23 @@ export default function ReproduccionDashboard() {
     }
   ];
 
-  const getPrioridadColor = (prioridad) => {
-    switch (prioridad) {
-      case "alta":
-        return "bg-red-50 border-red-200 text-red-800";
-      case "media":
-        return "bg-yellow-50 border-yellow-200 text-yellow-800";
-      case "baja":
-        return "bg-blue-50 border-blue-200 text-blue-800";
-      default:
-        return "bg-gray-50 border-gray-200 text-gray-800";
+  const getPrioridadColor = (diasRestantes) => {
+    if (diasRestantes <= 7) {
+      return "bg-red-50 border-red-200 text-red-800";
+    } else if (diasRestantes <= 15) {
+      return "bg-yellow-50 border-yellow-200 text-yellow-800";
+    } else {
+      return "bg-blue-50 border-blue-200 text-blue-800";
     }
   };
 
-  const getPrioridadIcon = (tipo) => {
-    switch (tipo) {
-      case "gestacion":
-        return <Baby className="w-5 h-5" />;
-      case "diagnostico":
-        return <Stethoscope className="w-5 h-5" />;
-      case "monta":
-        return <Heart className="w-5 h-5" />;
-      default:
-        return <Bell className="w-5 h-5" />;
+  const getPrioridadBadge = (diasRestantes) => {
+    if (diasRestantes <= 7) {
+      return "bg-red-200 text-red-800";
+    } else if (diasRestantes <= 15) {
+      return "bg-yellow-200 text-yellow-800";
+    } else {
+      return "bg-blue-200 text-blue-800";
     }
   };
 
@@ -227,49 +246,6 @@ export default function ReproduccionDashboard() {
           </div>
         </div>
 
-        {/* ESTADÍSTICAS RÁPIDAS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-pink-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Montas Activas</p>
-                <p className="text-3xl font-bold text-pink-600">{estadisticas.montasActivas}</p>
-              </div>
-              <Heart className="w-10 h-10 text-pink-500 opacity-20" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Gestaciones en Curso</p>
-                <p className="text-3xl font-bold text-purple-600">{estadisticas.gestacionesEnCurso}</p>
-              </div>
-              <Stethoscope className="w-10 h-10 text-purple-500 opacity-20" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Nacimientos Este Mes</p>
-                <p className="text-3xl font-bold text-blue-600">{estadisticas.nacimientosEsteMes}</p>
-              </div>
-              <Baby className="w-10 h-10 text-blue-500 opacity-20" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Eficiencia</p>
-                <p className="text-lg font-bold text-green-600">Excelente</p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-green-500 opacity-20" />
-            </div>
-          </div>
-        </div>
-
         {/* REGISTRO EN ANIMALES */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center space-x-2 mb-6">
@@ -298,83 +274,65 @@ export default function ReproduccionDashboard() {
           </div>
         </div>
 
-        {/* HISTORIAL GENERAL */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center space-x-2 mb-6">
-            <FileText className="w-6 h-6 text-indigo-600" />
-            <h3 className="text-xl font-semibold text-gray-800">Reportes y Análisis</h3>
-          </div>
 
-          <button
-            onClick={() => navigate(`/${fincaid}/reproduccion/historial-general`)}
-            className="w-full group relative p-6 bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-200 rounded-xl hover:shadow-xl hover:border-indigo-300 transition-all duration-300"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-lg shadow-lg">
-                  <FileText className="w-8 h-8 text-white" />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-lg font-bold text-gray-800 mb-1">Historial General</h4>
-                  <p className="text-sm text-gray-600">Ver historial completo de reproducción de la finca</p>
-                </div>
-              </div>
-              <ArrowLeft className="w-6 h-6 text-indigo-600 rotate-180 group-hover:translate-x-2 transition-transform" />
-            </div>
-          </button>
-        </div>
-
-        {/* NOTIFICACIONES Y ALERTAS */}
+        {/* RECORDATORIOS DE NACIMIENTOS PRÓXIMOS */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center space-x-2 mb-6">
             <Bell className="w-6 h-6 text-orange-600" />
-            <h3 className="text-xl font-semibold text-gray-800">Notificaciones del Sistema</h3>
-            {notificaciones.length > 0 && (
+            <h3 className="text-xl font-semibold text-gray-800">Recordatorios de Nacimientos</h3>
+            {recordatorios.length > 0 && (
               <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-2 py-1 rounded-full">
-                {notificaciones.length}
+                {recordatorios.length}
               </span>
             )}
           </div>
 
-          {notificaciones.length === 0 ? (
+          {recordatorios.length === 0 ? (
             <div className="text-center py-12">
               <div className="bg-gray-100 rounded-full p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                <Bell className="w-10 h-10 text-gray-400" />
+                <Baby className="w-10 h-10 text-gray-400" />
               </div>
-              <p className="text-gray-600 text-lg mb-2">No hay notificaciones</p>
+              <p className="text-gray-600 text-lg mb-2">No hay nacimientos próximos</p>
               <p className="text-gray-500 text-sm">
-                El sistema te alertará sobre eventos reproductivos importantes
+                No se encontraron gestaciones activas con parto estimado.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {notificaciones.map((notif) => (
+              {recordatorios.map((recordatorio) => (
                 <div
-                  key={notif.id}
-                  className={`flex items-start space-x-4 p-4 border-2 rounded-xl ${getPrioridadColor(notif.prioridad)}`}
+                  key={recordatorio.id}
+                  className={`flex items-start space-x-4 p-4 border-2 rounded-xl ${getPrioridadColor(recordatorio.diasRestantes)}`}
                 >
                   <div className="flex-shrink-0 mt-1">
-                    {getPrioridadIcon(notif.tipo)}
+                    <Baby className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium">{notif.mensaje}</p>
-                    <p className="text-xs mt-1 opacity-75">
-                      {new Date(notif.fecha).toLocaleDateString("es-ES", {
+                    <p className="font-medium">
+                      Nacimiento próximo: {recordatorio.nombreAnimal}
+                    </p>
+                    <p className="text-sm mt-1">
+                      Fecha estimada de parto: {new Date(recordatorio.fechaEstimadaParto).toLocaleDateString("es-ES", {
                         year: "numeric",
                         month: "long",
                         day: "numeric"
                       })}
                     </p>
+                    <p className="text-xs mt-1 opacity-75">
+                      {recordatorio.diasRestantes === 0 
+                        ? "¡Hoy es la fecha estimada!"
+                        : recordatorio.diasRestantes === 1
+                        ? "Mañana"
+                        : `En ${recordatorio.diasRestantes} días`}
+                    </p>
                   </div>
                   <div className="flex-shrink-0">
-                    <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
-                      notif.prioridad === "alta" 
-                        ? "bg-red-200 text-red-800"
-                        : notif.prioridad === "media"
-                        ? "bg-yellow-200 text-yellow-800"
-                        : "bg-blue-200 text-blue-800"
-                    }`}>
-                      {notif.prioridad.toUpperCase()}
+                    <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${getPrioridadBadge(recordatorio.diasRestantes)}`}>
+                      {recordatorio.diasRestantes <= 7 
+                        ? "URGENTE"
+                        : recordatorio.diasRestantes <= 15
+                        ? "PRÓXIMO"
+                        : "PROGRAMADO"}
                     </span>
                   </div>
                 </div>

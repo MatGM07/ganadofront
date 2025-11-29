@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, User, AlertCircle, Pill, Syringe, Trash2 } from "lucide-react";
+import { Calendar, User, AlertCircle, Pill, Syringe } from "lucide-react";
 import Header from "../../components/Header";
-import { apiGet, apiPut, apiDelete } from "../../api/api";
+import { apiGet, apiPut } from "../../api/api";
 
 export default function EditIncidenciaSanidad() {
   const { tipo, id, fincaid } = useParams(); // tipo: enfermedad|tratamiento|vacuna, id: UUID de la incidencia
@@ -10,9 +10,7 @@ export default function EditIncidenciaSanidad() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [incidenciaOriginal, setIncidenciaOriginal] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [form, setForm] = useState({
     responsable: "",
@@ -35,7 +33,7 @@ export default function EditIncidenciaSanidad() {
         icon: AlertCircle,
         color: "red",
         title: "Incidencia de Enfermedad",
-        estadosDisponibles: ["DIAGNOSTICADA", "EN_TRATAMIENTO", "RECUPERADO", "ANULADO"],
+        estadosDisponibles: ["DIAGNOSTICADA", "TRATAMIENTO", "FINALIZADA"],
         fechaField: "fechaDiagnostico",
         endpoint: "/api/sanidad/enfermedades/incidencias"
       },
@@ -43,7 +41,7 @@ export default function EditIncidenciaSanidad() {
         icon: Pill,
         color: "yellow",
         title: "Incidencia de Tratamiento",
-        estadosDisponibles: ["PENDIENTE", "APLICADO", "COMPLETADO", "ANULADO"],
+        estadosDisponibles: ["PENDIENTE", "REALIZADO", "ANULADO"],
         fechaField: "fechaTratamiento",
         endpoint: "/api/sanidad/tratamientos/incidencias"
       },
@@ -51,7 +49,7 @@ export default function EditIncidenciaSanidad() {
         icon: Syringe,
         color: "blue",
         title: "Incidencia de Vacunación",
-        estadosDisponibles: ["PENDIENTE", "APLICADO", "ANULADO"],
+        estadosDisponibles: ["PENDIENTE", "REALIZADO", "ANULADO"],
         fechaField: "fechaVacunacion",
         endpoint: "/api/sanidad/vacunas/incidencias"
       }
@@ -119,13 +117,6 @@ export default function EditIncidenciaSanidad() {
   const validar = () => {
     if (!form.responsable || !form.fecha || !form.estado) {
       return "Los campos obligatorios no pueden estar vacíos.";
-    }
-
-    // Validar que la fecha no sea futura
-    const fechaIncidencia = new Date(form.fecha);
-    const hoy = new Date();
-    if (fechaIncidencia > hoy) {
-      return "La fecha no puede ser futura.";
     }
 
     return null;
@@ -196,40 +187,15 @@ export default function EditIncidenciaSanidad() {
     }
   };
 
-  // Eliminar incidencia
-  const handleDelete = async () => {
-    try {
-      setDeleting(true);
-      setError("");
-
-      await apiDelete(`${config.endpoint}/${id}`);
-
-      setSuccess("Incidencia eliminada correctamente.");
-      
-      // Redirigir después de 1 segundo
-      setTimeout(() => {
-        navigate(`/${fincaid}/inventario/${form.idAnimal}/sanitario`);
-      }, 1000);
-
-    } catch (err) {
-      console.error("Error eliminando incidencia:", err);
-      setError(err.message || "No se pudo eliminar la incidencia.");
-      setShowDeleteModal(false);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   // Obtener color del estado
   const getEstadoColor = (estado) => {
     const colors = {
       PENDIENTE: "bg-yellow-100 text-yellow-800 border-yellow-300",
-      APLICADO: "bg-green-100 text-green-800 border-green-300",
-      COMPLETADO: "bg-green-100 text-green-800 border-green-300",
+      REALIZADO: "bg-green-100 text-green-800 border-green-300",
       ANULADO: "bg-gray-100 text-gray-800 border-gray-300",
       DIAGNOSTICADA: "bg-orange-100 text-orange-800 border-orange-300",
-      EN_TRATAMIENTO: "bg-blue-100 text-blue-800 border-blue-300",
-      RECUPERADO: "bg-green-100 text-green-800 border-green-300"
+      TRATAMIENTO: "bg-blue-100 text-blue-800 border-blue-300",
+      FINALIZADA: "bg-green-100 text-green-800 border-green-300"
     };
     return colors[estado] || "bg-gray-100 text-gray-800 border-gray-300";
   };
@@ -327,7 +293,7 @@ export default function EditIncidenciaSanidad() {
                   </div>
                 </div>
 
-                {/* Fecha */}
+                {/* Fecha - SIN RESTRICCIÓN max */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {tipo === "enfermedad" ? "Fecha Diagnóstico" : tipo === "tratamiento" ? "Fecha Tratamiento" : "Fecha Vacunación"} *
@@ -339,7 +305,6 @@ export default function EditIncidenciaSanidad() {
                       name="fecha"
                       value={form.fecha}
                       onChange={handleChange}
-                      max={new Date().toISOString().split('T')[0]}
                       className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />
@@ -371,7 +336,7 @@ export default function EditIncidenciaSanidad() {
 
               </div>
 
-              {/* Botones */}
+              {/* Botones - SIN BOTÓN DE ELIMINAR */}
               <div className="space-y-3 pt-4">
                 <button
                   type="submit"
@@ -388,15 +353,6 @@ export default function EditIncidenciaSanidad() {
                 >
                   Cancelar
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-all flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  Eliminar Incidencia
-                </button>
               </div>
             </form>
           </div>
@@ -407,45 +363,6 @@ export default function EditIncidenciaSanidad() {
           </div>
         </div>
       </div>
-
-      {/* Modal de confirmación de eliminación */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-            <div className="flex justify-center">
-              <div className="bg-red-100 rounded-full p-3">
-                <Trash2 className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                ¿Eliminar incidencia?
-              </h3>
-              <p className="text-gray-600">
-                Esta acción no se puede deshacer. La incidencia será eliminada permanentemente del sistema.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
-              </button>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
-                className="w-full py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium transition"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

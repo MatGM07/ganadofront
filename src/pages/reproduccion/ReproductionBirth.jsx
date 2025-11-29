@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Baby, Calendar, Scale, FileText, Hash, ArrowLeft, PawPrint } from "lucide-react";
+import { Baby, Calendar, Scale, FileText, Hash, ArrowLeft, PawPrint, AlertCircle } from "lucide-react";
 import { apiGet, apiPost, apiPut } from "../../api/api";
 
 export default function NacimientoRegister() {
-  const { fincaid, idMadre } = useParams();
+  const { fincaid, animalid } = useParams();
   const navigate = useNavigate();
 
   // Estados principales
@@ -15,7 +15,7 @@ export default function NacimientoRegister() {
   // Formulario de nacimiento
   const [form, setForm] = useState({
     idMonta: "",
-    idMadre: idMadre || "",
+    idMadre: animalid || "",
     fecha: "",
     observaciones: ""
   });
@@ -56,7 +56,7 @@ export default function NacimientoRegister() {
         // Obtener montas activas (estado != FINALIZADA) filtradas por la madre de la URL
         const montasData = await apiGet("/api/reproduccion/montas");
         const montasActivas = montasData.filter(m => 
-          m.estado !== "FINALIZADA" && m.idHembra === idMadre
+          m.estado !== "FINALIZADA" && m.idHembra === animalid
         );
         setMontas(montasActivas);
 
@@ -76,7 +76,7 @@ export default function NacimientoRegister() {
     };
 
     cargarDatos();
-  }, [fincaid, idMadre]);
+  }, [fincaid, animalid]);
 
   // Cuando se selecciona una monta, autocompletar la madre
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function NacimientoRegister() {
       const monta = montas.find(m => m.id === form.idMonta);
       if (monta) {
         setMontaSeleccionada(monta);
-        setForm(prev => ({ ...prev, idMadre: monta.idHembra }));
+        setForm(prev => ({ ...prev, animalid: monta.idHembra }));
       }
     }
   }, [form.idMonta, montas]);
@@ -110,7 +110,7 @@ export default function NacimientoRegister() {
     setSuccess("");
 
     // Validaciones
-    if (!form.idMonta || !form.idMadre || !animalForm.fechaNacimiento) {
+    if (!form.idMonta || !form.animalid || !animalForm.fechaNacimiento) {
       setError("Por favor complete todos los campos obligatorios.");
       return;
     }
@@ -123,13 +123,17 @@ export default function NacimientoRegister() {
     setIsSubmitting(true);
 
     try {
+      console.log("=== INICIANDO REGISTRO DE NACIMIENTO ===");
+      
       // 1. Crear el animal (hijo)
       const animalData = {
         ...animalForm,
         peso: animalForm.peso ? parseFloat(animalForm.peso) : null
       };
+      console.log("1. Creando animal:", animalData);
       const animalCreado = await apiPost("/api/inventory/animales", animalData);
       const idAnimal = animalCreado.id;
+      console.log("✓ Animal creado con ID:", idAnimal);
 
       // 2. Crear el registro de nacimiento
       const nacimientoData = {
@@ -141,28 +145,42 @@ export default function NacimientoRegister() {
         peso: animalForm.peso ? parseFloat(animalForm.peso) : null,
         observaciones: form.observaciones || null
       };
+      console.log("2. Registrando nacimiento:", nacimientoData);
       await apiPost("/api/reproduccion/nacimientos", nacimientoData);
+      console.log("✓ Nacimiento registrado");
 
-      // 3. Actualizar estado de la monta a "FINALIZADA"
+      // 3. Crear registro de genealogía
+      console.log("3. Creando genealogía...");
+      const genealogiaData = {
+        madre: form.animalid,
+        padre: montaSeleccionada?.idMacho || null, // El padre es opcional
+        hijo: idAnimal
+      };
+      console.log("Datos de genealogía:", genealogiaData);
+      
+      try {
+        await apiPost("/api/reproduccion/genealogias", genealogiaData);
+        console.log("✓ Genealogía creada exitosamente");
+      } catch (genError) {
+        console.error("⚠ Error al crear genealogía (no crítico):", genError);
+        // No detenemos el proceso completo si falla la genealogía
+      }
+
+      // 4. Actualizar estado de la monta a "FINALIZADA"
+      console.log("4. Finalizando monta...");
       await apiPut(`/api/reproduccion/montas/${form.idMonta}`, {
         ...montaSeleccionada,
         estado: "FINALIZADA"
       });
+      console.log("✓ Monta finalizada");
 
-      // 4. Crear registro de genealogía
-      const genealogiaData = {
-        madre: form.idMadre,
-        padre: montaSeleccionada?.idMacho || null, // Puede ser opcional
-        hijo: idAnimal
-      };
-      await apiPost("/api/reproduccion/genealogias", genealogiaData);
-
-      setSuccess("¡Nacimiento registrado correctamente!");
+      console.log("=== REGISTRO COMPLETADO EXITOSAMENTE ===");
+      setSuccess("¡Nacimiento registrado correctamente! Se ha creado el animal, el nacimiento y la genealogía.");
 
       // Limpiar formularios
       setForm({
         idMonta: "",
-        idMadre: "",
+        animalid: "",
         fecha: "",
         observaciones: ""
       });
@@ -175,7 +193,7 @@ export default function NacimientoRegister() {
         ubicacion: "",
         identificador: "",
         fincaId: fincaid,
-        estado: "ACTIVO"
+        estado: "Activo"
       });
       setMontaSeleccionada(null);
 
@@ -185,7 +203,7 @@ export default function NacimientoRegister() {
       }, 2000);
 
     } catch (err) {
-      console.error("Error al registrar nacimiento:", err);
+      console.error("❌ Error al registrar nacimiento:", err);
       setError(err.message || "Error al registrar el nacimiento. Por favor intente nuevamente.");
     } finally {
       setIsSubmitting(false);
@@ -241,7 +259,8 @@ export default function NacimientoRegister() {
 
             {/* Errores y éxito */}
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <p className="text-red-700 text-sm font-medium">{error}</p>
               </div>
             )}
@@ -283,7 +302,7 @@ export default function NacimientoRegister() {
                     </select>
                     {montas.length === 0 && (
                       <p className="mt-1 text-xs text-red-500">
-                        No hay montas activas disponibles
+                        No hay montas activas disponibles para esta hembra
                       </p>
                     )}
                   </div>
@@ -294,8 +313,8 @@ export default function NacimientoRegister() {
                       Madre *
                     </label>
                     <select
-                      name="idMadre"
-                      value={form.idMadre}
+                      name="animalid"
+                      value={form.animalid}
                       onChange={handleFormChange}
                       className="block w-full px-3 py-3 border border-gray-300 rounded-lg
                                 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none bg-gray-100 cursor-not-allowed"
@@ -314,6 +333,18 @@ export default function NacimientoRegister() {
                     </p>
                   </div>
                 </div>
+
+                {/* Info del padre si existe */}
+                {montaSeleccionada?.idMacho && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-700 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>
+                        <strong>Padre registrado:</strong> Se creará automáticamente el vínculo genealógico con el padre ID: {montaSeleccionada.idMacho.substring(0, 8)}...
+                      </span>
+                    </p>
+                  </div>
+                )}
 
                 {/* Observaciones */}
                 <div>
@@ -486,7 +517,8 @@ export default function NacimientoRegister() {
                 </p>
                 <ul className="mt-2 space-y-1 text-sm text-blue-600 list-disc list-inside">
                   <li>El registro del animal en el inventario</li>
-                  <li>El vínculo genealógico con madre y padre (si aplica)</li>
+                  <li>El registro del nacimiento vinculado a la monta</li>
+                  <li>El vínculo genealógico con madre y padre (si tiene padre registrado)</li>
                   <li>La monta quedará marcada como "FINALIZADA"</li>
                 </ul>
               </div>

@@ -413,7 +413,7 @@ export default function AnimalDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Registrar Monta */}
                   <button
-                    onClick={() => navigate(`/${fincaid}/reproduccion/montas/registrar/${id}`)}
+                    onClick={() => navigate(`/${fincaid}/reproduccion/monta/${id}`)}
                     className="p-4 bg-pink-50 hover:bg-pink-100 border-2 border-pink-200 rounded-lg transition-all flex items-center gap-3 group"
                   >
                     <div className="p-3 bg-pink-600 rounded-lg group-hover:scale-110 transition-transform">
@@ -427,7 +427,7 @@ export default function AnimalDetail() {
 
                   {/* Registrar Diagnóstico de Gestación */}
                   <button
-                    onClick={() => navigate(`/${fincaid}/reproduccion/gestacion/diagnosticar/${id}`)}
+                    onClick={() => navigate(`/${fincaid}/reproduccion/diagnostico/${id}`)}
                     className="p-4 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg transition-all flex items-center gap-3 group"
                   >
                     <div className="p-3 bg-purple-600 rounded-lg group-hover:scale-110 transition-transform">

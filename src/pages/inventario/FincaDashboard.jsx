@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/Header';
 import { useAuth } from "../../hooks/useAuth";
-import { apiGet, apiPost } from "../../api/api";
+import { apiGet, apiPost, apiPut } from "../../api/api";
 
 function FincaDashboard() {
   const navigate = useNavigate();
@@ -108,7 +108,7 @@ function FincaDashboard() {
         usuarioMiembroIds: nuevosMiembros
       };
 
-      await apiPost(`/api/inventory/fincas/${fincaData.id}`, updateData);
+      await apiPut(`/api/inventory/fincas/${fincaData.id}`, updateData);
 
       // Actualizar estado local
       setFincaData({ ...fincaData, usuarioMiembroIds: nuevosMiembros });
